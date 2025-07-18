@@ -6,7 +6,24 @@
 {{ with $url.Scheme }}
   {{  $image.Set "resource" (resources.GetRemote $dest) }}
 {{ else }}
-  {{  $image.Set "resource" (resources.Get $dest) }}
+  {{ $resource := "" }}
+  
+  {{- with $.Page.Resources.Get $url.Path }}
+    {{- /* Destination is a page resource - this handles multilingual correctly */}}
+    {{ $resource = . }}
+  {{- else }}
+    {{- with (and (ne $.Page.BundleType "leaf") ($.Page.CurrentSection.Resources.Get $url.Path)) }}
+      {{- /* Destination is a section resource, and current page is not a leaf bundle */}}
+      {{ $resource = . }}
+    {{- else }}
+      {{- with resources.Get $url.Path }}
+        {{- /* Destination is a global resource */}}
+        {{ $resource = . }}
+      {{- end }}
+    {{- end }}
+  {{- end }}
+  
+  {{ $image.Set "resource" $resource }}
 {{ end }}
 
 {{ if .Title }}
@@ -18,7 +35,9 @@
         <img src="{{ .RelPermalink | safeURL }}" alt="{{ $text }}" width="{{ .Width }}" height="{{ .Height }}" loading="lazy">
       {{ end }}
     {{ else }}
-      <img src="{{ .Destination | safeURL }}" alt="{{ $text }}" width="{{ .Width }}" height="{{ .Height }}" loading="lazy">
+      <!-- DEBUG: Image not found -->
+      <p>DEBUG: Image not found - Original: {{ .Destination }}</p>
+      <img src="{{ .Destination | safeURL }}" alt="{{ $text }}" loading="lazy">
     {{ end }}
     <figcaption>{{ .Title | markdownify }}</figcaption>
   </figure>
@@ -29,5 +48,9 @@
     {{ else }}
       <img src="{{ .RelPermalink | safeURL }}" alt="{{ $text }}" width="{{ .Width }}" height="{{ .Height }}" loading="lazy">
     {{ end }}
+  {{ else }}
+    <!-- DEBUG: Image not found -->
+    <p>DEBUG: Image not found - Original: {{ .Destination }}</p>
+    <img src="{{ .Destination | safeURL }}" alt="{{ $text }}" loading="lazy">
   {{ end }}
 {{ end }}
